@@ -5,6 +5,8 @@ Case Inteli Academy + ADAPTA
 
 Sistema de gateway unificado que traduz comandos em linguagem natural em ações executadas em múltiplas APIs, com gerenciamento centralizado de segurança e autenticação.
 
+Link para apresentação de slides do dia: <https://www.figma.com/proto/P2gAxyeF6EIJLH0bp7EdD9/adapta-mcp?node-id=1-2&p=f&t=SgUs396zez2R513D-1&scaling=contain&content-scaling=fixed&page-id=0%3A1>
+
 ## Arquitetura
 
 O sistema é composto por 6 componentes principais:
