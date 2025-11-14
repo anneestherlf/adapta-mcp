@@ -1,4 +1,7 @@
-# Gateway Inteligente - Adapta MCP
+# ADAPTA MCP Gateway
+Case Inteli Academy + ADAPTA
+
+<img align="center" src="/frontend/static/adapta-logo.png">
 
 Sistema de gateway unificado que traduz comandos em linguagem natural em ações executadas em múltiplas APIs, com gerenciamento centralizado de segurança e autenticação.
 
