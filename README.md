@@ -1,103 +1,140 @@
-# adapta-mcp
+# Gateway Inteligente - Adapta MCP
 
-# Gateway Central Inteligente (Trilha 2 - Inteli Academy)
+Sistema de gateway unificado que traduz comandos em linguagem natural em ações executadas em múltiplas APIs, com gerenciamento centralizado de segurança e autenticação.
 
-Este repositório demonstra uma arquitetura simples onde um Gateway
-recebe comandos em linguagem natural do frontend, usa um LLM (opcional)
-para decidir quais adaptadores (MCPs) acionar e consolida respostas de
-várias APIs externas (ex.: Mercado Livre, Figma).
+## Arquitetura
 
-Estrutura principal
+O sistema é composto por 6 componentes principais:
 
-/adapta-mcp
-|
-|-- 📂 gateway/
-|   |-- __init__.py
-|   |-- main.py         (Backend FastAPI — pontos de entrada e métricas)
-|   |-- services.py     (Roteador/integração com LLM e MCPs)
-|   |-- config.py       (Gerenciamento de chaves via .env)
-|   |-- observability.py (Logging e métricas simples)
-|
-|-- 📂 mcps/
-|   |-- __init__.py
-|   |-- mcp_mercadolivre.py (Adaptador Mercado Livre — busca pública)
-|   |-- mcp_figma.py        (Adaptador Figma)
-|
-|-- 📂 frontend/
-|   |-- app.py          (App Streamlit — UI mínima)
-|
-|-- .env                (Onde as chaves de API secretas ficarão)
-|-- .env.example        (Exemplo de variáveis de ambiente)
-|-- .gitignore
-|-- requirements.txt
+1. **Painel de Controle** (Passo 0): Configuração de ferramentas e credenciais
+2. **Interface de Apresentação** (Passo 1): Interface web para entrada de comandos
+3. **Gateway Unificado** (Passo 2): Backend único que recebe todas as requisições
+4. **Roteamento Inteligente** (Passo 3): LLM que interpreta comandos e decide ações
+5. **Hub de MCPs** (Passo 4): Adaptadores para cada ferramenta/API
+6. **Cofre de Chaves** (Passo 5): Gerenciamento centralizado de credenciais
+7. **Consolidação de Respostas** (Passo 6): Agregação e formatação de respostas
 
-Objetivo desta atualização
+## Instalação
 
-- Tornar o projeto executável localmente sem dependência imediata do LLM,
-	oferecendo um roteador de fallback que usa MCPs implementados (ex.:
-	`mcps/mcp_mercadolivre.py`) para testes.
-- Adicionar logging e métricas simples(in memory) expostas em `/metrics`.
-
-Como rodar (Windows / PowerShell)
-
-1) Crie um virtualenv e ative:
-
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-```
-
-2) Instale dependências:
-
-```powershell
+```bash
 pip install -r requirements.txt
 ```
 
-3) Configure variáveis de ambiente:
+## Configuração
 
-- Copie `.env.example` para `.env` e preencha as chaves se desejar usar o
-	Gemini ou Figma. Para desenvolvimento local, deixar `GEMINI_API_KEY` vazio
-	faz com que o Gateway use o roteador de fallback.
-
-4) Rodar o Gateway (FastAPI):
-
-```powershell
-uvicorn gateway.main:app --reload --host 127.0.0.1 --port 8000
+### 1. Instalar dependências
+```bash
+pip install -r requirements.txt
 ```
 
-Endpoints úteis
+### 2. Configurar variáveis de ambiente
 
-- POST /process-command  — recebe JSON {"prompt": "<seu comando>"}
-	- Ex.: {"prompt":"Buscar iPhone 15 no Mercado Livre"}
-- GET /         — health-check
-- GET /metrics  — retorna métricas simples em JSON (requests_total,
-	requests_success, requests_error, last_request_latency_ms)
+Execute o script de setup:
+```bash
+python setup.py
+```
 
-5) Rodar o frontend Streamlit (em outra janela/terminal):
+Ou crie manualmente o arquivo `.env` com as seguintes variáveis:
 
-```powershell
+- `GOOGLE_CLIENT_ID`: ID do cliente OAuth do Google (obtenha em [Google Cloud Console](https://console.cloud.google.com/))
+- `GOOGLE_CLIENT_SECRET`: Secret do cliente OAuth do Google
+- `GOOGLE_REDIRECT_URI`: URI de redirecionamento (padrão: `http://localhost:8000/auth/google/callback`)
+- `GEMINI_API_KEY`: Chave da API do Google Gemini (obtenha em [Google AI Studio](https://makersuite.google.com/app/apikey))
+- `SLACK_BOT_TOKEN`: Token do bot do Slack (opcional, pode ser configurado via painel)
+- `SECRET_KEY`: Chave secreta gerada automaticamente
+- `ENCRYPTION_KEY`: Chave de criptografia gerada automaticamente
+
+### 3. Configurar Google OAuth
+
+1. Acesse [Google Cloud Console](https://console.cloud.google.com/)
+2. Crie um novo projeto ou selecione um existente
+3. Ative a API do Google Calendar
+4. Configure a tela de consentimento OAuth
+5. Crie credenciais OAuth 2.0 (tipo "Aplicativo da Web")
+6. Adicione `http://localhost:8000/auth/google/callback` como URI de redirecionamento autorizado.
+   - Para desenvolvimento local com TLS (recomendado): você pode gerar um certificado autoassinado e usar `https://localhost:8000/auth/google/callback` como URI de redirecionamento autorizado.
+   - O repositório inclui um gerador de certificado em `tools/generate_self_signed_cert.py` e os scripts `run_backend.bat` / `run_backend.sh` foram atualizados para iniciar o backend com TLS automaticamente quando os certificados existirem.
+7. Copie o Client ID e Client Secret para o arquivo `.env`
+
+## Execução
+
+### Windows
+```bash
+# Terminal 1 - Backend
+run_backend.bat
+
+# Terminal 2 - Frontend
+run_frontend.bat
+```
+
+### Linux/Mac
+```bash
+# Terminal 1 - Backend
+chmod +x run_backend.sh
+./run_backend.sh
+
+# Terminal 2 - Frontend
+chmod +x run_frontend.sh
+./run_frontend.sh
+```
+
+### Manual
+```bash
+# Terminal 1 - Backend (sem TLS)
+uvicorn backend.main:app --reload --port 8000
+
+# Terminal 1 - Backend (com TLS usando certificados em `certs/`)
+# Gere certificados com: `python tools/generate_self_signed_cert.py`
+uvicorn backend.main:app --reload --port 8000 --ssl-certfile certs/cert.pem --ssl-keyfile certs/key.pem
+
+# Terminal 2 - Frontend
 streamlit run frontend/app.py
 ```
 
-Exemplos de prompts para testar
+### Acessos
+- **Frontend (Interface)**: http://localhost:8501
+- **Backend (API)**: http://localhost:8000
+- **Documentação da API**: http://localhost:8000/docs
 
-- "Buscar iPhone 15 no Mercado Livre"
-- "Procure por monitor 27 polegadas no Mercado Livre"
-- "Mostre informações do arquivo Figma ABCDEFGH" (precisa de file id e API Key)
+## Uso
 
-Próximos passos recomendados
+### Passo a Passo
 
-- Implementar `mcps/mcp_mercadolivre.py` com mais campos e paginação (já
-	existe uma implementação PoC que busca 5 resultados públicos).
-- Tornar endpoints assíncronos para escalabilidade (usar httpx async e
-	`async def` no FastAPI).
-- Subir métricas para Prometheus ou usar `prometheus_client` para integração
-	com observabilidade padrão.
-- Adicionar validação Pydantic para o schema de respostas do MCP e testes.
+1. **Inicie os servidores** (backend e frontend)
 
-Se quiser, eu posso:
-- Transformar o Gateway para async agora (maior mudança).
-- Adicionar testes unitários para os MCPs.
-- Integrar `prometheus_client` para métricas compatíveis com Prometheus.
+2. **Configure as credenciais**:
+   - Acesse o Painel de Controle na interface web
+   - Conecte sua conta Google (OAuth 2.0) - Tipo A
+   - Configure chaves de API estáticas (Slack, etc.) - Tipo B
 
-Obrigado — diga qual próxima melhoria prefere que eu implemente.
+3. **Execute comandos**:
+   - Vá para a página "Executar Comando"
+   - Digite seu comando em linguagem natural
+   - O sistema interpreta, executa e retorna resposta consolidada
+
+### Fluxo de Autenticação
+
+**Tipo A (OAuth 2.0 - Google Calendar)**:
+1. Usuário clica em "Conectar Google" no Painel de Controle
+2. É redirecionado para tela de login do Google
+3. Autoriza o acesso
+4. Sistema recebe `refresh_token` e armazena no Cofre
+5. Quando necessário, usa `refresh_token` para obter `access_token` temporário
+
+**Tipo B (Chave Estática - Slack)**:
+1. Administrador insere chave de API no Painel de Controle
+2. Chave é armazenada no Cofre (criptografada)
+3. Quando necessário, chave é recuperada e usada diretamente
+
+## Exemplo
+
+**Comando:**
+```
+Marque uma 'Reunião de Alinhamento' no meu Google Calendar amanhã às 10h e avise no canal #projetos do Slack que a reunião foi marcada.
+```
+
+**Resultado:**
+- Evento criado no Google Calendar
+- Mensagem enviada no Slack
+- Resposta consolidada: "Pronto! Marquei a 'Reunião de Alinhamento' no seu Google Calendar e avisei o canal #projetos no Slack."
+
